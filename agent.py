@@ -1195,23 +1195,56 @@ def _fallback_answer(
     # ENGLISH FALLBACK
     # ---------------------------------------------------------
 
+    # Keep cloud fallback useful even if the hosted LLM is temporarily
+    # unavailable. For the common startup-noise + check-engine case,
+    # provide focused, evidence-safe guidance instead of a generic sentence.
+    query_lower = query.lower()
+
+    if (
+        ("check engine" in query_lower or "check-engine" in query_lower)
+        and any(word in query_lower for word in ["noise", "sound", "rattle", "click", "grinding", "squeal"])
+        and any(word in query_lower for word in ["start", "starting", "startup", "crank"])
+    ):
+        return (
+            f"### Assessment\n"
+            f"**{vehicle}** has a startup noise together with a check-engine light. "
+            "The exact noise type and the stored OBD-II code are the most useful clues for narrowing the cause.\n\n"
+            "### Likely causes\n"
+            "- **Starting/charging issue:** A weak battery, poor terminal connection, or starter-system fault can cause clicking, slow cranking, or unusual starting noise.\n"
+            "- **Ignition or fueling issue:** An ignition or fuel-delivery problem can trigger the check-engine light and may cause rough or difficult starting.\n"
+            "- **Engine accessory or belt-related noise:** A worn belt, tensioner, pulley, or accessory can create clicking, squealing, or rattling at startup.\n"
+            "- **Exhaust/emissions issue:** The check-engine light may come from an emissions-related fault; the OBD-II code is needed before identifying a specific component.\n\n"
+            "### What to check now\n"
+            "- **Identify the noise:** Note whether it is clicking, grinding, squealing, knocking, rattling, or another sound, and whether it stops after the engine starts.\n"
+            "- **Read the OBD-II code:** Scan the check-engine light and record the exact code before replacing parts.\n"
+            "- **Check the battery and terminals:** Look for loose/corroded connections and have battery/charging condition tested.\n"
+            "- **Observe starting behavior:** Note slow cranking, misfiring, shaking, loss of power, or whether the noise continues after startup.\n\n"
+            "### What may need service or replacement\n"
+            "- The battery, starter system, ignition/fueling components, or an engine accessory may need service depending on the inspection and OBD-II findings.\n"
+            "- Do not replace the catalytic converter, oxygen sensor, or another specific component based only on the check-engine light.\n\n"
+            "### Attention level\n"
+            f"{tool_result.get('level', 'ROUTINE')}\n\n"
+            "### When to stop driving\n"
+            "- Stop driving and arrange professional help if the check-engine light is flashing, the engine is severely misfiring, there is smoke/fire/fuel leakage, severe overheating, or loss of vehicle control.\n"
+            "- If the light is steady and the car otherwise runs normally, arrange inspection and read the OBD-II code rather than automatically stopping the vehicle.\n\n"
+            "### Sources\n"
+            + "\n".join(source_links)
+        )
+
     return (
         f"### Assessment\n"
         f"**{vehicle}** — reported symptom: _{query}_\n\n"
         "### Likely causes\n"
-        "- Multiple causes can produce this symptom; this is "
-        "troubleshooting guidance, not a confirmed diagnosis.\n\n"
+        "- The symptom can have multiple possible causes; use the retrieved evidence and tool result as troubleshooting guidance, not a confirmed diagnosis.\n\n"
         "### What to check now\n"
-        "- Observe warning lights, leaks, noise and whether "
-        "the symptom changes with operating conditions.\n"
-        "- Avoid touching hot or moving components.\n\n"
+        "- Note exactly when the symptom occurs and what conditions make it better or worse.\n"
+        "- Check visible warning lights, leaks, and obvious damage without touching hot or moving parts.\n\n"
         "### What may need service or replacement\n"
-        "- Inspect and test the affected system before "
-        "replacing a component.\n\n"
+        "- Diagnose the affected system before replacing components.\n\n"
         "### Attention level\n"
         f"{tool_result.get('level', 'ROUTINE')}\n\n"
         "### When to stop driving\n"
-        f"{tool_result.get('action', 'Stop and arrange professional help if braking, steering, fire/fuel-leak risk or severe overheating is present.')}\n\n"
+        f"{tool_result.get('action', 'Stop driving and seek professional help if vehicle control, braking, overheating, fuel leakage, or smoke becomes unsafe.')}\n\n"
         "### Sources\n"
         + "\n".join(source_links)
     )
