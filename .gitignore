@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.streamlit/secrets.toml
+chroma_db/
+.DS_Store
+# AutoSage local appointment state
+autosage_service.db
+autosage_service.db-shm
+autosage_service.db-wal
