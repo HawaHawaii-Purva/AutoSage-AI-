@@ -906,6 +906,30 @@ Create a clear answer in Markdown using these headings exactly:
 
 ### Sources
 
+DIAGNOSTIC QUALITY RULES:
+- Make the likely causes specific to the user's exact symptoms, vehicle type, and reported conditions.
+- Do not use generic statements such as "multiple causes can produce this symptom" as the main answer.
+- For each likely cause, briefly explain why it matches the reported symptom.
+- Give practical, safe checks that help distinguish between the likely causes.
+- If a warning light such as the check-engine light is reported, recommend reading the OBD-II trouble code when appropriate.
+- For unusual engine noise, identify the type of noise as an important diagnostic clue and ask the user to note whether it is clicking, grinding, squealing, knocking, rattling, or another sound.
+- Do not invent a specific failed component or claim a confirmed diagnosis without evidence.
+- Prioritize the most relevant 2-4 possibilities rather than listing unrelated possibilities.
+- Connect each "What to check now" item to a likely cause whenever possible.
+- Do not suggest suspension or steering faults for an engine-startup noise unless the user reports that the noise occurs during steering, braking, bumps, or vehicle movement.
+- For a startup noise with a check-engine light, prioritize starting/charging, ignition/fueling, engine/accessory, and exhaust-related possibilities when supported by the evidence.
+
+SAFETY OUTPUT RULES:
+
+- The "Attention level" must be EXACTLY one of: ROUTINE, HIGH, or CRITICAL.
+- Do not add any explanation, bullet, or sentence on the "Attention level" line.
+- Never upgrade ROUTINE to HIGH or CRITICAL unless the tool result explicitly indicates HIGH or CRITICAL.
+- For noise + check-engine-light symptoms, do not automatically tell the user to stop driving.
+- Recommend stopping driving only when there is a specific safety reason such as severe overheating, smoke, fire/fuel leak, braking or steering problems, loss of control, flashing check-engine light with severe rough running, or another clearly dangerous symptom.
+- If the check-engine light is steady and the vehicle is otherwise operating normally, explain that the vehicle should be inspected and the OBD-II code should be read, rather than automatically saying to stop driving.
+- Under "When to stop driving", list only concrete conditions that justify stopping.
+- Do not write phrases such as "Safety critical:**" inside the answer.
+
 FORMATTING RULES:
 - Assessment should be 1-3 short sentences.
 - Under Likely causes, use separate bullet points.
@@ -937,7 +961,8 @@ SAFETY AND CONTENT RULES:
             {"prompt": final_prompt}
         )
 
-    except Exception:
+    except Exception as exc:
+        print("DEBUG answer_chain error:", repr(exc))
         answer = _fallback_answer(
             vehicle,
             query,
@@ -957,7 +982,20 @@ SAFETY AND CONTENT RULES:
     ):
         answer = cleanup_hinglish(answer)
 
-    # Markdown bullet cleanup
+    # Markdown cleanup
+    answer = answer.replace(r"\*\*", "**")
+    answer = answer.replace(r"\*", "*")
+    answer = answer.replace(r"\_", "_")
+    answer = answer.replace(r"\#", "#")
+
+    # Attention level should never be shown as a bullet.
+    answer = re.sub(
+        r"(### Attention level\s*)-\s*(ROUTINE|HIGH|CRITICAL)\b",
+        r"\1\2",
+        answer,
+        flags=re.IGNORECASE,
+    )
+
     answer = cleanup_markdown_bullets(answer)
 
     mechanic_recommended = (
